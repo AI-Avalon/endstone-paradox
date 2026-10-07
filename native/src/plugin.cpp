@@ -208,7 +208,7 @@ class ParadoxPlugin : public es::Plugin {
                     }
                     if (now() - last_event_error_ > 10) {
                         last_event_error_ = now();
-                        getLogger().error("Event inspection suspended: {}", e.what());
+                        getLogger().error(tr("log_event_inspection_suspended"), e.what();
                     }
                 }
             },
@@ -299,7 +299,7 @@ void ParadoxPlugin::onEnable() {
             config_ = toml::parse_file(config_path.string());
         else {
             std::ofstream file(config_path);
-            file << "# Paradox native configuration\n[web_ui]\nenabled = true\nhost = \"127.0.0.1\"\nport = "
+            file << "# Paradox native configuration / Paradox ネイティブ設定\n[web_ui]\nenabled = true\nhost = \"127.0.0.1\"\nport = "
                     "8080\n\n[config]\nlanguage = \"en_US\"\n\n[global_database]\nenabled = false\napi_url = \"\"\napi_key = "
                     "\"\"\n\n[worldborder]\nradius = 0\nx = 0\nz = 0\n\n[afk]\ntimeout = 600\nkick = "
                     "false\n\n[lagclear]\ninterval = 300\nenabled_removal = false\n";
@@ -322,7 +322,7 @@ void ParadoxPlugin::onEnable() {
                             locale_[el.key()] = el.value();
                         }
                     } catch (const std::exception &e) {
-                        getLogger().error("Failed to parse locale {}: {}", l, e.what());
+                        getLogger().error(tr("log_failed_to_parse_locale"), l, e.what();
                     }
                 }
             }
@@ -433,7 +433,7 @@ void ParadoxPlugin::onEnable() {
                          "plugin data folder.",
                          PARADOX_VERSION, modules_.size());
     } catch (const std::exception &e) {
-        getLogger().error("Paradox startup failed: {}", e.what());
+        getLogger().error(tr("log_paradox_startup_failed"), e.what();
         getServer().getPluginManager().disablePlugin(*this);
     }
 }
@@ -448,7 +448,7 @@ void ParadoxPlugin::onDisable() {
         try {
             db_->flush();
         } catch (const std::exception &e) {
-            getLogger().error("Database flush failed: {}", e.what());
+            getLogger().error(tr("log_database_flush_failed"), e.what();
         }
         db_.reset();
     }
@@ -755,7 +755,7 @@ void ParadoxPlugin::tick() {
             try {
                 command(getServer().getCommandSender(), name, split({rest}));
             } catch (const std::exception &e) {
-                getLogger().warning("Web command failed: {}", e.what());
+                getLogger().warning(tr("log_web_command_failed"), e.what();
             }
         }
         for (auto &[tag, response] : web_->responses()) {
@@ -795,7 +795,7 @@ void ParadoxPlugin::tick() {
         std::erase_if(watchers_, [&](auto &i) { return i.second.second < time; });
         std::erase_if(tpa_, [&](auto &i) { return i.second.second < time; });
         if (!db_->error().empty())
-            getLogger().error("Paradox persistence is unavailable: {}", db_->error());
+            getLogger().error(tr("log_paradox_persistence_is_unavail"), db_->error();
     }
     if (ticks_ % 20 == 0 && enabled("lagclear") && setting<bool>("lagclear", "enabled_removal", true)) {
         double interval =
@@ -1505,9 +1505,9 @@ void ParadoxPlugin::show_gui(es::Player &p) {
         if (!active_ || !player || (clearance(*player) < 4 && !player->hasPermission("paradox.settings")))
             return;
         es::ActionForm list;
-        list.setTitle("Modules");
+        list.setTitle(tr("form_title_modules"));
         for (auto &[name, data] : modules_.items())
-            list.addButton(name + ": " + (data.value("enabled", false) ? "on" : "off"), std::nullopt,
+            list.addButton(name + ": " + (data.value("enabled", false) ? tr("ui_on") : tr("ui_off")), std::nullopt,
                            [this, name](es::Player *p) {
                                if (active_ && p && (clearance(*p) >= 4 || p->hasPermission("paradox.settings"))) {
                                    module(name, !enabled(name));
@@ -1519,7 +1519,7 @@ void ParadoxPlugin::show_gui(es::Player &p) {
     form.addButton(tr("form_btn_evidence"), std::nullopt, [this](es::Player *player) {
         if (active_ && player && (clearance(*player) >= 3 || player->hasPermission("paradox.case"))) {
             es::ActionForm f;
-            f.setTitle("Evidence").setContent(recent_.dump(2));
+            f.setTitle(tr("form_title_evidence")).setContent(recent_.dump(2));
             send_form(*player, std::move(f));
         }
     });
@@ -1616,7 +1616,7 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
                 module(a[0], arg(1) == "on");
         }
         for (auto &[key, value] : modules_.items())
-            say(key + ": " + (value.value("enabled", false) ? "on" : "off"));
+            say(key + ": " + (value.value("enabled", false) ? tr("ui_on") : tr("ui_off")));
         return true;
     }
     if (name == "mode") {
@@ -2062,8 +2062,8 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         auto data = db_->get("pvp_data", id(p), true);
         bool state = data.is_object() ? data.value("enabled", true) : data != false;
         if (!a.empty() && (a[0] == "status" || a[0] == "info")) {
-            say(std::string("Personal PvP: ") + (state ? "on" : "off") +
-                "; global: " + (db_->get("config", "global_pvp", true) == true ? "on" : "off"));
+            say(std::string("Personal PvP: ") + (state ? tr("ui_on") : tr("ui_off")) +
+                "; global: " + (db_->get("config", "global_pvp", true) == true ? tr("ui_on") : tr("ui_off")));
             return true;
         }
         if (!a.empty() && a[0] != "on" && a[0] != "off")
@@ -2198,7 +2198,7 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         if (!a.empty() && a[0] != "on" && a[0] != "off")
             throw std::invalid_argument(tr("cmd_use_on_or_off"));
         module(name, state);
-        say(name + (state ? " enabled." : " disabled."));
+        say(name + " " + (state ? tr("ui_enabled") : tr("ui_disabled")));
         return true;
     }
     throw std::invalid_argument("Unknown Paradox command.");
