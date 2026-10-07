@@ -51,6 +51,7 @@ class AntiGriefModule(BaseModule):
 
     def on_block_break(self, event):
         """Called from paradox.py on_block_break."""
+        return  # nuker/fast_break 無効化 (一括破壊の誤検知防止)
         player = event.player
         if self.plugin.security.is_level4(player):
             return

@@ -98,7 +98,7 @@ class BaseModule(ABC):
             try:
                 self.check()
             except Exception as e:
-                self.logger.error(f"[Paradox] Module '{self.name}' check error: {e}")
+                self.logger.error(f"§e[ §6ACS §e]§r Module '{self.name}' check error: {e}")
             if self.running:
                 self._task = self.plugin.server.scheduler.run_task(
                     self.plugin, run_check, delay=self.check_interval

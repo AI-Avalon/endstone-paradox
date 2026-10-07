@@ -31,7 +31,7 @@ class AntiCrashModule(BaseModule):
                 if player:
                     size_kb = payload_size / 1024
                     # Immediate kick
-                    player.kick("§c[Paradox] Crasher exploit detected.")
+                    player.kick("§c§e[ §6ACS §e]§r Crasher exploit detected.")
                     
                     # Notify admins
                     self.plugin.send_to_level4(f"§2[§7Paradox§2]§o§7 §e[Anti-Crash]§7 Blocked crash attempt from §f{player.name} §e[{size_kb:.2f}KB]§7.")

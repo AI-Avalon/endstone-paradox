@@ -48,7 +48,7 @@ class LagClearModule(BaseModule):
             self._warning_sent = True
             for player in self.plugin.server.online_players:
                 player.send_message(
-                    "§2[§7Paradox§2]§e Ground items will be cleared in 30 seconds!"
+                    "§e[ §6ACS §e]§r 地上のアイテムは30秒後に自動消去されます！"
                 )
 
         if elapsed >= self._interval:
@@ -92,7 +92,7 @@ class LagClearModule(BaseModule):
         if total_cleared > 0:
             for player in self.plugin.server.online_players:
                 player.send_message(
-                    f"§2[§7Paradox§2]§a Cleared {total_cleared} ground items/arrows/XP orbs!"
+                    f"§e[ §6ACS §e]§r {total_cleared} 個のドロップアイテムを消去しました。"
                 )
 
     def set_interval(self, seconds: int):

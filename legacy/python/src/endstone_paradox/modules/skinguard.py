@@ -96,7 +96,7 @@ class SkinGuardModule(BaseModule):
             }, action_hint="kick")
 
             try:
-                player.kick(f"§c[Paradox] Invalid skin: {reasons}")
+                player.kick(f"§c§e[ §6ACS §e]§r Invalid skin: {reasons}")
             except Exception:
                 pass
 

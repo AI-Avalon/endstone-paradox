@@ -14,6 +14,7 @@ class DeathCoordsModule(BaseModule):
         loc = player.location
         dim_name = player.dimension.name
         
-        player.send_message(
-            f"§cYou died at: §e{int(loc.x)}, {int(loc.y)}, {int(loc.z)} §cin §e{dim_name}"
-        )
+        # 重複する英語死亡通知を抑制 (survival_tweaks 側で処理するため)
+        # player.send_message(
+        #     f"§cYou died at: §e{int(loc.x)}, {int(loc.y)}, {int(loc.z)} §cin §e{dim_name}"
+        # )

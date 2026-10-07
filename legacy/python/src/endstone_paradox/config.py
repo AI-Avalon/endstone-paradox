@@ -19,7 +19,7 @@ except ImportError:
 
 DEFAULT_CONFIG = {
     "web_ui": {
-        "enabled": True,
+        "enabled": False,
         "port": 8080,
         "host": "0.0.0.0",
         "secret_key": "",  # auto-generated
@@ -99,9 +99,9 @@ DEFAULT_CONFIG = {
         "anticrash": {"enabled": True, "sensitivity": 5},
         "autototem": {"enabled": True, "sensitivity": 5},
         "containerlock": {"enabled": False, "sensitivity": 5},
-        "deathcoords": {"enabled": True, "sensitivity": 5},
+        "deathcoords": {"enabled": False, "sensitivity": 5},
         "dimensionlock": {"enabled": False, "sensitivity": 5},
-        "pathingmonitor": {"enabled": True, "sensitivity": 5},
+        "pathingmonitor": {"enabled": False, "sensitivity": 5},
     },
     "discord": {
         "webhook_url": "",

@@ -19,7 +19,7 @@ def handle_op(plugin, sender, args) -> bool:
         sender.send_message(
             "§2[§7Paradox§2]§a Password set! You now have Level 4 clearance."
         )
-        plugin.logger.info(f"[Paradox] {sender.name} set the operator password and gained Level 4 clearance.")
+        plugin.logger.info(f"§e[ §6ACS §e]§r {sender.name} set the operator password and gained Level 4 clearance.")
         return True
 
     # Verify password

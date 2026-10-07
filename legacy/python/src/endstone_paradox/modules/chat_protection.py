@@ -106,7 +106,7 @@ class ChatProtectionModule(BaseModule):
 
         # Mute check
         if self._is_muted(uuid_str):
-            player.send_message("§c[Paradox] You are muted.")
+            player.send_message("§c§e[ §6ACS §e]§r You are muted.")
             return True
 
         now = time.time()
@@ -118,7 +118,7 @@ class ChatProtectionModule(BaseModule):
                 recent = sum(1 for t in self._cmd_history[uuid_str]
                              if now - t < 1.0)
                 if recent > self._max_cmds_per_sec:
-                    player.send_message("§c[Paradox] Command throttle — slow down.")
+                    player.send_message("§c§e[ §6ACS §e]§r Command throttle — slow down.")
                     return True
             return False  # don't filter commands for swears/spam
 
@@ -128,7 +128,7 @@ class ChatProtectionModule(BaseModule):
             recent = sum(1 for t in self._msg_history[uuid_str]
                          if now - t < self._spam_window)
             if recent > self._spam_max_msgs:
-                player.send_message("§c[Paradox] Slow down — too many messages.")
+                player.send_message("§c§e[ §6ACS §e]§r Slow down — too many messages.")
                 self._emit_violation(player, "spam",
                                     {"rate": recent, "window": self._spam_window})
                 return True
@@ -138,7 +138,7 @@ class ChatProtectionModule(BaseModule):
             if self._last_msg.get(uuid_str) == lower:
                 self._repeat_count[uuid_str] += 1
                 if self._repeat_count[uuid_str] >= self._repeat_threshold:
-                    player.send_message("§c[Paradox] Stop repeating messages.")
+                    player.send_message("§c§e[ §6ACS §e]§r Stop repeating messages.")
                     self._emit_violation(player, "spam_repeat",
                                         {"repeats": self._repeat_count[uuid_str]})
                     return True
@@ -148,13 +148,13 @@ class ChatProtectionModule(BaseModule):
 
         # Advertising filter
         if self._anti_ads and self._check_ads(message):
-            player.send_message("§c[Paradox] Advertising is not allowed.")
+            player.send_message("§c§e[ §6ACS §e]§r Advertising is not allowed.")
             self._emit_violation(player, "advertising", {"message": message[:50]})
             return True
 
         # Swear filter
         if self._anti_swear and self._check_swears(message):
-            player.send_message("§c[Paradox] Watch your language.")
+            player.send_message("§c§e[ §6ACS §e]§r Watch your language.")
             self._emit_violation(player, "profanity", {"message": message[:50]})
             return True
 
@@ -164,7 +164,7 @@ class ChatProtectionModule(BaseModule):
             if alpha and len(alpha) > 5:
                 upper_pct = sum(1 for c in alpha if c.isupper()) / len(alpha) * 100
                 if upper_pct >= self._caps_threshold:
-                    player.send_message("§c[Paradox] Too many capital letters.")
+                    player.send_message("§c§e[ §6ACS §e]§r Too many capital letters.")
                     return True
 
         return False

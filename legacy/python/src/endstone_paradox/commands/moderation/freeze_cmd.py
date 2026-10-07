@@ -27,7 +27,7 @@ def handle_freeze(plugin, sender, args) -> bool:
         # Unfreeze
         plugin._frozen_players.discard(uuid_str)
         plugin.db.delete("frozen_players", uuid_str)
-        target.send_message("§2[§7Paradox§2]§a You have been unfrozen.")
+        target.send_message("§2[§7Paradox§2]§a §aフリーズが解除されました。")
         sender.send_message(f"§2[§7Paradox§2]§a Unfroze {target.name}.")
     else:
         # Freeze

@@ -190,9 +190,9 @@ class ContainerSeeModule(BaseModule):
         # Build display
         if not counts and not armor_items:
             try:
-                admin.send_tip(f"§2[Paradox]§7 {target.name}'s inventory is empty")
+                admin.send_tip(f"§2§e[ §6ACS §e]§r§7 {target.name}'s inventory is empty")
             except Exception:
-                admin.send_message(f"§2[Paradox]§7 {target.name}'s inventory is empty")
+                admin.send_message(f"§2§e[ §6ACS §e]§r§7 {target.name}'s inventory is empty")
             self._page[uid] = 0
             return
 
@@ -204,7 +204,7 @@ class ContainerSeeModule(BaseModule):
         page_entries = entries[start:start + self.ITEMS_PER_PAGE]
 
         lines = []
-        header = f"§2[Paradox]§b {target.name}§a's Inventory:"
+        header = f"§2§e[ §6ACS §e]§r§b {target.name}§a's Inventory:"
         if total_pages > 1:
             header += f" §8({current_page + 1}/{total_pages})"
         lines.append(header)
@@ -265,9 +265,9 @@ class ContainerSeeModule(BaseModule):
             block_type = str(block.type).replace("minecraft:", "")
             block_name = _format_item_name(f"minecraft:{block_type}")
             try:
-                admin.send_tip(f"§2[Paradox]§7 Container: §f{block_name}")
+                admin.send_tip(f"§2§e[ §6ACS §e]§r§7 Container: §f{block_name}")
             except Exception:
-                admin.send_message(f"§2[Paradox]§7 Container: {block_name}")
+                admin.send_message(f"§2§e[ §6ACS §e]§r§7 Container: {block_name}")
         except Exception:
             pass
 

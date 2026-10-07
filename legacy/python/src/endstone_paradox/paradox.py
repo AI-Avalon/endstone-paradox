@@ -638,8 +638,8 @@ class ParadoxPlugin(Plugin):
         # global ban list check (hardcoded from original Paradox AntiCheat)
         from endstone_paradox.globalban import is_globally_banned
         if is_globally_banned(player.name):
-            player.kick("§cYou are globally banned from Paradox AntiCheat!")
-            self.logger.info(f"Globally banned player {player.name} attempted to join - kicked.")
+            player.kick("§cあなたは Paradox AntiCheat によりグローバルBANされています！")
+            self.logger.info(f"グローバルBANされたプレイヤー {player.name} の参加試行をブロックしました。")
             return
 
         # ban check
@@ -662,7 +662,7 @@ class ParadoxPlugin(Plugin):
         if self._lockdown_active:
             from endstone_paradox.commands.moderation.lockdown_cmd import _player_meets_lockdown
             if not _player_meets_lockdown(self, player):
-                player.kick("§cServer is currently in lockdown mode.")
+                player.kick("§cサーバーは現在ロックダウン中です。")
                 return
 
         # update player record

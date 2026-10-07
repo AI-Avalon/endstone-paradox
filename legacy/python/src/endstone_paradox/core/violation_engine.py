@@ -338,7 +338,7 @@ class ViolationEngine:
                 # Teleport player to last safe position
                 self._setback(player)
             elif action == ACTION_KICK:
-                player.kick(f"§c[Paradox] Kicked for {module} violations")
+                player.kick(f"§c§e[ §6ACS §e]§r {module} の不正検知によりキックされました")
             elif action == ACTION_BAN:
                 uuid_str = str(player.unique_id)
                 reason = f"Auto-ban: {module} violations"
@@ -347,7 +347,7 @@ class ViolationEngine:
                     "reason": reason,
                     "time": time.time(),
                 })
-                player.kick(f"§c[Paradox] Banned for {module} violations")
+                player.kick(f"§c§e[ §6ACS §e]§r {module} の不正検知によりBANされました")
 
                 # Push auto-ban to Global Ban API
                 if hasattr(self.plugin, '_global_api') and self.plugin._global_api:
