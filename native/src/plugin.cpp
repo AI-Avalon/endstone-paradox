@@ -110,7 +110,7 @@ std::vector<std::string> split(const std::vector<std::string> &args) {
     while (in >> std::quoted(s)) {
         out.push_back(s);
         if (out.size() > 32)
-            throw std::invalid_argument("Too many arguments");
+            throw std::invalid_argument(tr("cmd_too_many_arguments"));
     }
     return out;
 }
@@ -127,7 +127,7 @@ double number(const std::string &s, double low, double high) {
     std::size_t n{};
     double d = std::stod(s, &n);
     if (n != s.size() || !std::isfinite(d) || d < low || d > high)
-        throw std::invalid_argument("Value outside allowed range");
+        throw std::invalid_argument(tr("cmd_value_outside_allowed_range"));
     return d;
 }
 
@@ -368,7 +368,7 @@ void ParadoxPlugin::onEnable() {
             file << token << '\n';
             file.close();
             if (!file)
-                throw std::runtime_error("Could not save web token");
+                throw std::runtime_error(tr("cmd_could_not_save_web_token"));
         }
         fingerprint_salt_ = sha256(token + ":fingerprints");
         web_ = std::make_unique<Web>(
@@ -457,7 +457,7 @@ void ParadoxPlugin::onDisable() {
 }
 void ParadoxPlugin::module(std::string name, bool state) {
     if (!modules_.contains(name))
-        throw std::invalid_argument("Unknown module");
+        throw std::invalid_argument(tr("cmd_unknown_module"));
     modules_[name]["enabled"] = state;
     db_->set("modules", name, modules_[name]);
     for (auto *p : getServer().getOnlinePlayers())
@@ -1538,22 +1538,22 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
     auto *player = sender.asPlayer();
     auto need = [&](int level, const std::string &permission) {
         if (!sender.asConsole() && (!player || (clearance(*player) < level && !player->hasPermission(permission))))
-            throw std::invalid_argument("You do not have permission for this action.");
+            throw std::invalid_argument(tr("cmd_you_do_not_have_permission_for"));
     };
     auto arg = [&](std::size_t n) -> std::string {
         if (n >= a.size())
-            throw std::invalid_argument("Missing command argument");
+            throw std::invalid_argument(tr("cmd_missing_command_argument"));
         return a[n];
     };
     auto require_player = [&]() -> es::Player & {
         if (!player)
-            throw std::invalid_argument("This command requires a player.");
+            throw std::invalid_argument(tr("cmd_this_command_requires_a_player"));
         return *player;
     };
     auto target = [&](std::size_t index) -> es::Player & {
         auto *p = getServer().getPlayer(arg(index));
         if (!p)
-            throw std::invalid_argument("Player is not online.");
+            throw std::invalid_argument(tr("cmd_player_is_not_online"));
         return *p;
     };
     auto say = [&](std::string message) {
@@ -1565,9 +1565,9 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         "home",  "tpa",  "tpr", "pvp",      "pvptoggle",    "channels", "gui",      "guiitem",
         "about", "ping", "tps", "waypoint", "chunkborders", "report",   "landclaim"};
     if (player && utility_permissions.contains(name) && !player->hasPermission("paradox." + name))
-        throw std::invalid_argument("You do not have permission for this command.");
+        throw std::invalid_argument(tr("cmd_you_do_not_have_permission_for_1"));
     if (player && clearance(*player) < 4 && db_->get("disabled_commands", "ac-" + name, false) == true)
-        throw std::invalid_argument("That command is disabled.");
+        throw std::invalid_argument(tr("cmd_that_command_is_disabled"));
     if (name == "pvptoggle")
         name = "pvp";
     if (name == "gui") {
@@ -1582,7 +1582,7 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         meta->setLore(std::vector<std::string>{"Open your Paradox controls"});
         item.setItemMeta(meta.get());
         if (!p.getInventory().addItem(item).empty())
-            throw std::invalid_argument("Your inventory is full.");
+            throw std::invalid_argument(tr("cmd_your_inventory_is_full"));
         say("Use the Paradox Menu compass to open controls.");
         return true;
     }
@@ -1607,7 +1607,7 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         if (!a.empty()) {
             need(4, "paradox.settings");
             if (arg(1) != "on" && arg(1) != "off")
-                throw std::invalid_argument("Use on or off");
+                throw std::invalid_argument(tr("cmd_use_on_or_off"));
             if (a[0] == "all") {
                 bool state = arg(1) == "on";
                 for (const auto &m : module_specs())
@@ -1623,7 +1623,7 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         need(4, "paradox.settings");
         if (!a.empty()) {
             if (a[0] != "soft" && a[0] != "hard" && a[0] != "logonly")
-                throw std::invalid_argument("Use soft, hard or logonly");
+                throw std::invalid_argument(tr("cmd_use_soft_hard_or_logonly"));
             mode_ = a[0];
             db_->set("config", "enforcement_mode", mode_);
             for (auto *p : getServer().getOnlinePlayers())
@@ -1641,23 +1641,23 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         db_->set("players", id(p), data);
         reset(p);
         audit(name, sender, {{"target", id(p)}, {"level", level}});
-        say("Clearance updated.");
+        say(tr("cmd_clearance_updated"));
         return true;
     }
     if (name == "op") {
         auto &p = require_player();
         auto &s = players_[id(p)];
         if (now() - s.auth_attempt < 5)
-            throw std::invalid_argument("Wait before trying again.");
+            throw std::invalid_argument(tr("cmd_wait_before_trying_again"));
         s.auth_attempt = now();
         auto hash = db_->get("config", "op_password_hash", "").get<std::string>();
         if (hash.empty() || !constant_equal(hash, sha256(join(a, 0))))
-            throw std::invalid_argument("Authentication failed. The console can use ac-setclearance.");
+            throw std::invalid_argument(tr("cmd_authentication_failed_the_con"));
         auto data = db_->get("players", id(p), Json::object());
         data["clearance"] = 4;
         db_->set("players", id(p), data);
         reset(p);
-        say("Clearance granted.");
+        say(tr("cmd_clearance_granted"));
         return true;
     }
     if (name == "deop") {
@@ -1668,7 +1668,7 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         data["clearance"] = 1;
         db_->set("players", id(p), data);
         reset(p);
-        say("Clearance removed.");
+        say(tr("cmd_clearance_removed"));
         return true;
     }
     if (name == "opsec" || name == "whois") {
@@ -1689,7 +1689,7 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         if (reason.empty())
             reason = "Server moderation";
         if (player && clearance(p) >= clearance(*player) && !player->hasPermission("paradox.settings"))
-            throw std::invalid_argument("Cannot moderate a player with equal or higher clearance.");
+            throw std::invalid_argument(tr("cmd_cannot_moderate_a_player_with"));
         if (action == "ban" || action == "tempban") {
             db_->set("bans", id(p),
                      {{"name", p.getName()},
@@ -1713,19 +1713,19 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         else
             throw std::invalid_argument(tr("punish_usage"));
         audit(action, sender, {{"target", id(p)}, {"reason", reason}});
-        say("Moderation action completed.");
+        say(tr("cmd_moderation_action_completed"));
         return true;
     }
     if (name == "unban") {
         need(3, "paradox.unban");
         auto who = normalize_name(join(a, 0));
         if (who.empty())
-            throw std::invalid_argument("Supply a name or UUID");
+            throw std::invalid_argument(tr("cmd_supply_a_name_or_uuid"));
         for (auto &[key, row] : db_->all("bans").items())
             if (normalize_name(key) == who || (row.is_object() && normalize_name(row.value("name", "")) == who))
                 db_->erase("bans", key);
         audit(name, sender, who);
-        say("Matching bans removed.");
+        say(tr("cmd_matching_bans_removed"));
         return true;
     }
     if (name == "allowlist" || name == "whitelist") {
@@ -1737,7 +1737,7 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         }
         if (name == "whitelist" && (action == "on" || action == "off")) {
             db_->set("config", "whitelist_enabled", action == "on");
-            say("Whitelist updated.");
+            say(tr("cmd_whitelist_updated"));
             return true;
         }
         std::string who = join(a, 1), key;
@@ -1760,10 +1760,10 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
             record["uuid"] = key;
             db_->set(name, key, record);
         } else
-            throw std::invalid_argument("Use add, remove, list, on or off.");
+            throw std::invalid_argument(tr("cmd_use_add_remove_list_on_or_o"));
         audit(name, sender, {{"operation", action}, {"target", who}});
         refresh_policies();
-        say("List updated.");
+        say(tr("cmd_list_updated"));
         return true;
     }
     if (name == "case" || name == "history" ||
@@ -1790,11 +1790,11 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         else {
             auto module_name = arg(1);
             if (module_name != "all" && !modules_.contains(module_name))
-                throw std::invalid_argument("Unknown module");
+                throw std::invalid_argument(tr("cmd_unknown_module"));
             players_[id(p)].exemptions[module_name] = now() + (a.size() > 2 ? number(a[2], 1, 3600) : 300);
             reset(p);
         }
-        say("Updated.");
+        say(tr("cmd_updated"));
         return true;
     }
     if (name == "home" || name == "waypoint") {
@@ -1807,12 +1807,12 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
                     label = a.size() > 1 ? a[1] : "default";
         if (action == "set") {
             if (label.size() > 48 || (homes.size() >= 20 && !homes.contains(label)))
-                throw std::invalid_argument("Limit: 20 locations, 48 characters per name.");
+                throw std::invalid_argument(tr("cmd_limit_20_locations_48_charac"));
             homes[label] = location_json(p.getLocation());
             db_->set(table, uid, homes);
             say("Saved " + label + ".");
         } else if (action == "help") {
-            say("Use set, delete, list or tp followed by a location name.");
+            say(tr("cmd_use_set_delete_list_or_tp_fo"));
         } else if (action == "delete" || action == "del" || action == "remove") {
             homes.erase(label);
             db_->set(table, uid, homes);
@@ -1822,14 +1822,14 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         else {
             label = action == "tp" ? label : action;
             if (!homes.contains(label) || !teleport(p, homes[label]))
-                throw std::invalid_argument("Location unavailable.");
+                throw std::invalid_argument(tr("cmd_location_unavailable"));
         }
         return true;
     }
     if (name == "tpr") {
         auto &p = require_player();
         if (players_[id(p)].combat_until > now())
-            throw std::invalid_argument("Wait until combat ends before teleporting.");
+            throw std::invalid_argument(tr("cmd_wait_until_combat_ends_before"));
         const double radius = a.empty() ? 500 : number(a[0], 16, 10000);
         const auto origin = p.getLocation();
         std::mt19937 random(std::random_device{}());
@@ -1856,12 +1856,12 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
             to.setX(to.getBlockX() + 0.5);
             to.setZ(to.getBlockZ() + 0.5);
             if (teleport(p, location_json(to))) {
-                say("Teleported to a safe loaded location.");
+                say(tr("cmd_teleported_to_a_safe_loaded_lo"));
                 return true;
             }
         }
         throw std::invalid_argument(
-            "No safe loaded destination in that radius. Try a smaller radius or explore more terrain.");
+            tr("cmd_no_safe_loaded_destination_in"));
     }
     if (name == "vanish") {
         need(3, "paradox.vanish");
@@ -1875,7 +1875,7 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
                                                                             (s.vanished ? "1000000 0 true" : "0"));
         if (!result) {
             s.vanished = !s.vanished;
-            throw std::runtime_error("Server could not apply invisibility.");
+            throw std::runtime_error(tr("cmd_server_could_not_apply_invisib"));
         }
         p.setNameTagVisible(!s.vanished);
         db_->set("vanished_players", id(p), s.vanished);
@@ -1886,7 +1886,7 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         need(3, "paradox.despawn");
         std::string type = a.empty() ? "" : a[0];
         if (!type.empty() && type != "item" && type != "arrow" && type != "xp_orb")
-            throw std::invalid_argument("Supported cleanup targets: item, arrow, xp_orb.");
+            throw std::invalid_argument(tr("cmd_supported_cleanup_targets_ite"));
         std::optional<es::Location> center;
         if (player)
             center = player->getLocation();
@@ -1909,23 +1909,23 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         }
         auto label = a.size() > 1 ? a[1] : "default";
         if (label.empty() || label.size() > 32)
-            throw std::invalid_argument("Claim name limit: 32 characters.");
+            throw std::invalid_argument(tr("cmd_claim_name_limit_32_character"));
         const auto key = uid + ":" + label;
         if (action == "create") {
             if (!enabled("landclaim"))
-                throw std::invalid_argument("Land claims are disabled by the server administrator.");
+                throw std::invalid_argument(tr("cmd_land_claims_are_disabled_by_th"));
             unsigned owned = 0;
             for (auto &[key, c] : claims_.items())
                 if (c.value("owner", "") == uid)
                     ++owned;
             if (owned >= 5 && !claims_.contains(key))
-                throw std::invalid_argument("Limit: five claims per player.");
+                throw std::invalid_argument(tr("cmd_limit_five_claims_per_player"));
             int radius = a.size() > 2 ? static_cast<int>(number(a[2], 4, 128)) : 16;
             for (auto &[other, c] : claims_.items())
                 if (other != key && c.value("dimension", "") == l.getDimension().getName() &&
                     std::abs(l.getBlockX() - c.value("x", 0)) <= radius + c.value("radius", 16) + 4 &&
                     std::abs(l.getBlockZ() - c.value("z", 0)) <= radius + c.value("radius", 16) + 4)
-                    throw std::invalid_argument("Claim overlaps an existing claim or its four-block buffer.");
+                    throw std::invalid_argument(tr("cmd_claim_overlaps_an_existing_cla"));
             db_->set("claims", key,
                      {{"owner", uid},
                       {"name", label},
@@ -1935,19 +1935,19 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
                       {"radius", radius},
                       {"trusted", Json::array()}});
             refresh_policies();
-            say("Claim created.");
+            say(tr("cmd_claim_created"));
             return true;
         }
         if (action == "delete") {
             db_->erase("claims", key);
             refresh_policies();
-            say("Claim removed.");
+            say(tr("cmd_claim_removed"));
             return true;
         }
         if (action == "trust" || action == "untrust") {
             auto c = db_->get("claims", key);
             if (!c.is_object())
-                throw std::invalid_argument("Unknown claim.");
+                throw std::invalid_argument(tr("cmd_unknown_claim"));
             auto &who = target(2);
             auto trusted = c.value("trusted", Json::array());
             auto found = std::find(trusted.begin(), trusted.end(), Json(id(who)));
@@ -1958,23 +1958,23 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
             c["trusted"] = trusted;
             db_->set("claims", key, c);
             refresh_policies();
-            say("Claim trust updated.");
+            say(tr("cmd_claim_trust_updated"));
             return true;
         }
-        throw std::invalid_argument("Use create, delete, list, trust or untrust.");
+        throw std::invalid_argument(tr("cmd_use_create_delete_list_trus"));
     }
     if (name == "tpa") {
         auto &p = require_player();
         if (arg(0) == "accept") {
             auto it = tpa_.find(id(p));
             if (it == tpa_.end() || it->second.second < now())
-                throw std::invalid_argument("No pending request.");
+                throw std::invalid_argument(tr("cmd_no_pending_request"));
             es::Player *requester = nullptr;
             for (auto *candidate : getServer().getOnlinePlayers())
                 if (id(*candidate) == it->second.first)
                     requester = candidate;
             if (!requester)
-                throw std::invalid_argument("Requester left the server.");
+                throw std::invalid_argument(tr("cmd_requester_left_the_server"));
             auto where = location_json(p.getLocation());
             tpa_.erase(it);
             teleport(*requester, where);
@@ -2021,20 +2021,20 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         else if (action == "create") {
             auto label = arg(1);
             if (label.size() > 32)
-                throw std::invalid_argument("Channel name too long");
+                throw std::invalid_argument(tr("cmd_channel_name_too_long"));
             db_->set("channels", label, {{"owner", id(p)}});
             s.channel = label;
         } else if (action == "join") {
             auto label = arg(1);
             if (db_->get("channels", label).is_null())
-                throw std::invalid_argument("Unknown channel");
+                throw std::invalid_argument(tr("cmd_unknown_channel"));
             s.channel = label;
         } else
-            throw std::invalid_argument("Use create, join, leave or list");
+            throw std::invalid_argument(tr("cmd_use_create_join_leave_or_lis"));
         auto data = db_->get("player_data", id(p), Json::object());
         data["channel"] = s.channel;
         db_->set("player_data", id(p), data);
-        say("Channel updated.");
+        say(tr("cmd_channel_updated"));
         return true;
     }
     if (name == "rank") {
@@ -2044,12 +2044,12 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         players_[id(p)].rank = rank;
         db_->set("ranks", id(p), rank);
         p.setScoreTag(rank);
-        say("Rank updated.");
+        say(tr("cmd_rank_updated"));
         return true;
     }
     if (name == "pvp") {
         if (!enabled("pvp"))
-            throw std::invalid_argument("PvP management is disabled.");
+            throw std::invalid_argument(tr("cmd_pvp_management_is_disabled"));
         if (!a.empty() && a[0] == "global") {
             need(4, "paradox.settings");
             auto state = db_->get("config", "global_pvp", true) != false;
@@ -2067,11 +2067,11 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
             return true;
         }
         if (!a.empty() && a[0] != "on" && a[0] != "off")
-            throw std::invalid_argument("Use on, off, status or global.");
+            throw std::invalid_argument(tr("cmd_use_on_off_status_or_global"));
         if (s.combat_until > now())
-            throw std::invalid_argument("PvP cannot be changed during combat.");
+            throw std::invalid_argument(tr("cmd_pvp_cannot_be_changed_during_c"));
         if (now() - s.last_pvp_toggle < 10)
-            throw std::invalid_argument("Wait ten seconds between PvP changes.");
+            throw std::invalid_argument(tr("cmd_wait_ten_seconds_between_pvp_c"));
         state = a.empty() ? !state : a[0] == "on";
         db_->set("pvp_data", id(p), state);
         s.last_pvp_toggle = now();
@@ -2081,10 +2081,10 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
     if (name == "chunkborders") {
         auto &p = require_player();
         if (!enabled("chunkborders"))
-            throw std::invalid_argument("Chunk border display is disabled by the server administrator.");
+            throw std::invalid_argument(tr("cmd_chunk_border_display_is_disabl"));
         auto &s = players_[id(p)];
         s.chunk_borders = !s.chunk_borders;
-        say("Chunk borders toggled.");
+        say(tr("cmd_chunk_borders_toggled"));
         return true;
     }
     if (name == "transfer") {
@@ -2109,35 +2109,35 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
     if (name == "report") {
         auto &p = require_player();
         if (!enabled("reportsystem"))
-            throw std::invalid_argument("Player reports are disabled.");
+            throw std::invalid_argument(tr("cmd_player_reports_are_disabled"));
         auto &s = players_[id(p)];
         if (now() - s.last_report < 30)
-            throw std::invalid_argument("Wait thirty seconds between reports.");
+            throw std::invalid_argument(tr("cmd_wait_thirty_seconds_between_re"));
         s.last_report = now();
         auto &who = target(0);
         auto reason = join(a, 1);
         if (reason.empty())
-            throw std::invalid_argument("Supply a reason");
+            throw std::invalid_argument(tr("cmd_supply_a_reason"));
         db_->set("reports", random_token(),
                  {{"reporter", id(p)}, {"target", id(who)}, {"reason", reason}, {"time", unix_time()}});
-        say("Report recorded for review.");
+        say(tr("cmd_report_recorded_for_review"));
         return true;
     }
     if (name == "command") {
         need(4, "paradox.command");
         if (arg(0) != "enable" && arg(0) != "disable")
-            throw std::invalid_argument("Use enable or disable.");
+            throw std::invalid_argument(tr("cmd_use_enable_or_disable"));
         auto which = arg(1);
         if (!which.starts_with("ac-"))
             which = "ac-" + which;
         db_->set("disabled_commands", which, arg(0) == "disable");
-        say("Command policy updated.");
+        say(tr("cmd_command_policy_updated"));
         return true;
     }
     if (name == "prefix") {
         need(4, "paradox.prefix");
         db_->set("config", "prefix", join(a, 0));
-        say("Prefix saved.");
+        say(tr("cmd_prefix_saved"));
         return true;
     }
     if (name == "debug-db") {
@@ -2155,7 +2155,7 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         need(4, "paradox.settings");
         db_->set("config", name == "afk" ? "afk_timeout" : "lagclear_interval", number(a[0], 60, 86400));
         module(name, true);
-        say("Interval saved.");
+        say(tr("cmd_interval_saved"));
         return true;
     }
     if (name == "environment") {
@@ -2166,10 +2166,10 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         if ((kind == "time" && times.contains(value)) || (kind == "weather" && weather.contains(value))) {
             if (!getServer().dispatchCommand(getServer().getCommandSender(),
                                              kind + (kind == "time" ? " set " : " ") + value))
-                throw std::runtime_error("Server rejected environment command.");
+                throw std::runtime_error(tr("cmd_server_rejected_environment_co"));
             return true;
         }
-        throw std::invalid_argument("Use time sunrise/day/noon/sunset/night/midnight or weather clear/rain/thunder.");
+        throw std::invalid_argument(tr("cmd_use_time_sunrise_day_noon_suns"));
     }
     if (name == "worldborder" && !a.empty() && a[0] != "on" && a[0] != "off") {
         need(4, "paradox.settings");
@@ -2178,7 +2178,7 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
                   {"x", a.size() > 1 ? number(a[1], -30000000, 30000000) : 0},
                   {"z", a.size() > 2 ? number(a[2], -30000000, 30000000) : 0}});
         module(name, true);
-        say("World border updated.");
+        say(tr("cmd_world_border_updated"));
         return true;
     }
     if (name == "lockdown") {
@@ -2196,7 +2196,7 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         need(4, "paradox.settings");
         bool state = a.empty() ? !enabled(name) : a[0] == "on";
         if (!a.empty() && a[0] != "on" && a[0] != "off")
-            throw std::invalid_argument("Use on or off");
+            throw std::invalid_argument(tr("cmd_use_on_or_off"));
         module(name, state);
         say(name + (state ? " enabled." : " disabled."));
         return true;

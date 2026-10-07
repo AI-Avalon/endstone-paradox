@@ -1,0 +1,109 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release Version (e.g. v2.0.2)'
+        required: true
+        default: 'v2.0.2'
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Install LLVM 20
+        run: |
+          choco install llvm --version=20.1.0 -y
+          
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install cmake==3.31.6 ninja conan==2.31.0 uv==0.12.17
+          conan profile detect --name paradox-native
+          conan install --requires=openssl/3.5.2 --output-folder=build/deps -pr:h=paradox-native -pr:b=paradox-native -s build_type=Release -g CMakeDeps --build=missing
+
+      - name: Build Windows DLL
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File native/tools/build-windows.ps1 -LlvmRoot 'C:/Program Files/LLVM' -DependencyDirectory "$PWD/build/deps"
+          
+      - name: Package
+        run: |
+          python native/tools/package.py build/windows/endstone_paradox.dll --platform windows
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: endstone_paradox-*.zip
+
+  build-linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          
+      - name: Install dependencies
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 20
+          sudo apt-get install -y libc++-20-dev libc++abi-20-dev libssl-dev ninja-build
+          
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install python dependencies
+        run: |
+          python -m pip install cmake==3.31.6 ninja uv==0.12.17
+          
+      - name: Build Linux SO
+        run: |
+          cmake -S . -B build/linux -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-20 -DCMAKE_CXX_COMPILER=clang++-20
+          cmake --build build/linux --parallel 4
+          
+      - name: Package
+        run: |
+          python native/tools/package.py build/linux/endstone_paradox.so --platform linux
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-release
+          path: endstone_paradox-*.zip
+
+  create-release:
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-release
+          
+      - name: Download Linux Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-release
+          
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          files: |
+            endstone_paradox-*.zip
+          draft: true
+          generate_release_notes: true
