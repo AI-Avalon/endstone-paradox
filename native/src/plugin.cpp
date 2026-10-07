@@ -169,6 +169,19 @@ class ParadoxPlugin : public es::Plugin {
     std::unordered_set<std::string> chunks_;
     Enforcement enforcement_;
     Json modules_ = Json::object(), recent_ = Json::array(), claims_ = Json::object();
+    Json locale_;
+    std::string tr(const std::string &key, const std::unordered_map<std::string, std::string> &args = {}) const {
+        std::string text = locale_.value(key, key);
+        for (const auto &[k, v] : args) {
+            size_t pos = 0;
+            std::string token = "{" + k + "}";
+            while ((pos = text.find(token, pos)) != std::string::npos) {
+                text.replace(pos, token.length(), v);
+                pos += v.length();
+            }
+        }
+        return text;
+    }
     std::unordered_map<std::string, std::unordered_set<std::string>> identity_lists_;
     void refresh_policies();
     std::string mode_ = "soft";
@@ -287,13 +300,39 @@ void ParadoxPlugin::onEnable() {
         else {
             std::ofstream file(config_path);
             file << "# Paradox native configuration\n[web_ui]\nenabled = true\nhost = \"127.0.0.1\"\nport = "
-                    "8080\n\n[global_database]\nenabled = false\napi_url = \"\"\napi_key = "
+                    "8080\n\n[config]\nlanguage = \"en_US\"\n\n[global_database]\nenabled = false\napi_url = \"\"\napi_key = "
                     "\"\"\n\n[worldborder]\nradius = 0\nx = 0\nz = 0\n\n[afk]\ntimeout = 600\nkick = "
                     "false\n\n[lagclear]\ninterval = 300\nenabled_removal = false\n";
             file.close();
             config_ = toml::parse_file(config_path.string());
         }
         db_ = std::make_unique<Store>(data / "paradox.db");
+
+        std::filesystem::create_directories(data / "locales");
+        std::string lang = setting<std::string>("config", "language", "en_US");
+        auto load_locale = [&](const std::string& l) {
+            auto path = data / "locales" / (l + ".json");
+            if (std::filesystem::exists(path)) {
+                std::ifstream f(path);
+                if (f.is_open()) {
+                    try {
+                        Json j;
+                        f >> j;
+                        for (auto& el : j.items()) {
+                            locale_[el.key()] = el.value();
+                        }
+                    } catch (const std::exception &e) {
+                        getLogger().error("Failed to parse locale {}: {}", l, e.what());
+                    }
+                }
+            }
+        };
+        locale_ = Json::object();
+        load_locale("en_US");
+        if (lang != "en_US") {
+            load_locale(lang);
+        }
+
         refresh_policies();
         for (const auto &spec : module_specs()) {
             auto old = db_->get("modules", std::string(spec.name));
@@ -485,21 +524,21 @@ void ParadoxPlugin::initialize(es::Player &p) {
             continue;
         auto ban = db_->get("bans", key);
         if (ban.is_object() && (ban.value("expires", 0.0) == 0 || ban.value("expires", 0.0) > unix_time())) {
-            p.kick("[Paradox] Banned: " + ban.value("reason", "Server ban"));
+            p.kick(tr("ban_message", {{"reason", ban.value("reason", "Server ban")}}));
             return;
         }
     }
     if (!p.getXuid().empty()) {
         auto ban = db_->get("global_bans", p.getXuid());
         if (ban.is_object() && ban.value("player_xuid", "") == p.getXuid() && ban.value("category", "") == "ban") {
-            p.kick("[Paradox] Global ban: " + ban.value("reason", "Server network ban"));
+            p.kick(tr("global_ban_message", {{"reason", ban.value("reason", "Server network ban")}}));
             return;
         }
     }
     if (db_->get("config", "whitelist_enabled", false) == true && !allowed(p, "whitelist") && clearance(p) < 4)
-        p.kick("[Paradox] This server requires a verified whitelist entry.");
+        p.kick(tr("whitelist_kick"));
     if (enabled("lockdown") && clearance(p) < db_->get("config", "lockdown_clearance", 4).get<int>())
-        p.kick("[Paradox] Server is in lockdown.");
+        p.kick(tr("lockdown_kick"));
     if (enabled("namespoof"))
         for (auto *other : getServer().getOnlinePlayers())
             if (id(*other) != uid && normalize_name(other->getName()) == normalize_name(p.getName())) {
@@ -565,7 +604,7 @@ void ParadoxPlugin::emit(es::Player &p, const Finding &finding, es::ICancellable
             p.teleport(safe);
         }
     } else if (action == Action::kick)
-        p.kick("[Paradox] Repeated verified " + finding.module + " violations.");
+        p.kick(tr("repeated_violations", {{"module", finding.module}}));
     if (state.alerts.contains(finding.module) && time - state.alerts[finding.module] < 10)
         return;
     state.alerts[finding.module] = time;
@@ -602,8 +641,7 @@ void ParadoxPlugin::emit(es::Player &p, const Finding &finding, es::ICancellable
         auto watch = watchers_.find(id(*staff));
         if (clearance(*staff) >= 4 || staff->hasPermission("paradox.alerts") ||
             (watch != watchers_.end() && watch->second.first == id(p) && watch->second.second > time))
-            staff->sendMessage("[Paradox] " + p.getName() + " / " + finding.module + ": " + finding.reason + " (" +
-                               action_name + ")");
+            staff->sendMessage(tr("staff_alert", {{"player", p.getName()}, {"module", finding.module}, {"reason", finding.reason}, {"action", action_name}}));
     }
     if (web_ && enabled("discord") && finding.confidence != Confidence::observation) {
         auto url = setting<std::string>("discord", "webhook_url", "");
@@ -676,9 +714,9 @@ void ParadoxPlugin::tick() {
         if (s.joined && enabled("afk") &&
             time - s.activity >
                 db_->get("config", "afk_timeout", setting<double>("afk", "timeout", 600)).get<double>()) {
-            p->sendTip("[Paradox] You are AFK");
+            p->sendTip(tr("afk_tip"));
             if (setting<bool>("afk", "kick", false) && s.detector.lag.ready(time) && clearance(*p) < 4)
-                p->kick("[Paradox] AFK timeout");
+                p->kick(tr("afk_kick"));
         }
         if (enabled("chunkborders") && s.chunk_borders) {
             auto l = p->getLocation();
@@ -764,13 +802,12 @@ void ParadoxPlugin::tick() {
             db_->get("config", "lagclear_interval", setting<double>("lagclear", "interval", 300)).get<double>();
         interval = std::max(60.0, interval);
         if (time - last_clean_ >= interval - 30 && !clean_warning_) {
-            getServer().broadcastMessage(
-                "[Paradox] Unnamed dropped items, arrows and XP orbs will be cleared in 30 seconds.");
+            getServer().broadcastMessage(tr("lagclear_warning"));
             clean_warning_ = true;
         }
         if (time - last_clean_ >= interval) {
             auto count = clear_entities();
-            getServer().broadcastMessage("[Paradox] Cleared " + std::to_string(count) + " dropped entities.");
+            getServer().broadcastMessage(tr("lagclear_cleared", {{"count", std::to_string(count)}}));
             last_clean_ = time;
             clean_warning_ = false;
         }
@@ -1054,7 +1091,7 @@ void ParadoxPlugin::move_event(es::PlayerMoveEvent &e) {
         // An admin teleport outside the border must not trap a player; allow movement inward.
         if (border.value("enabled", true) && radius > 0 && distance > radius && distance > previous_distance) {
             e.setCancelled(true);
-            p.sendTip("[Paradox] World border");
+            p.sendTip(tr("worldborder_tip"));
             reset(p);
             return;
         }
@@ -1086,7 +1123,7 @@ void ParadoxPlugin::teleport_event(es::PlayerTeleportEvent &e) {
     if (enabled("dimensionlock") && clearance(p) < 4 &&
         e.getFrom().getDimension().getName() != e.getTo().getDimension().getName()) {
         e.setCancelled(true);
-        p.sendMessage("[Paradox] Dimension travel is locked.");
+        p.sendMessage(tr("dimension_locked"));
     }
     reset(p, 10);
 }
@@ -1107,7 +1144,7 @@ void ParadoxPlugin::gamemode_event(es::PlayerGameModeChangeEvent &e) {
         permitted = mode == *legacy_mode;
     if (enabled("gamemodepolicy") && clearance(p) < 4 && !permitted) {
         e.setCancelled(true);
-        p.sendMessage("[Paradox] That game mode is disabled by server policy.");
+        p.sendMessage(tr("gamemode_disabled"));
     }
 }
 void ParadoxPlugin::damage_event(es::ActorDamageEvent &e) {
@@ -1197,7 +1234,7 @@ void ParadoxPlugin::chat_event(es::PlayerChatEvent &e) {
     auto mute = db_->get("mutes", id(p), legacy_mutes.is_object() ? legacy_mutes.value(id(p), Json()) : Json());
     if (mute.is_number() && (mute.get<double>() == 0 || mute.get<double>() > unix_time())) {
         e.setCancelled(true);
-        p.sendMessage("[Paradox] You are muted.");
+        p.sendMessage(tr("muted"));
         return;
     }
     if (enabled("chatprotection") && clearance(p) < 4) {
@@ -1207,7 +1244,7 @@ void ParadoxPlugin::chat_event(es::PlayerChatEvent &e) {
         bool duplicate = e.getMessage() == s.last_message && time - s.last_chat < 3;
         if ((s.chat_times.size() > 5 || duplicate) && s.detector.lag.ready(time)) {
             e.setCancelled(true);
-            p.sendMessage("[Paradox] Please slow down in chat.");
+            p.sendMessage(tr("chat_slow_down"));
         }
         if (e.getMessage().size() > 1024) {
             e.setCancelled(true);
@@ -1220,7 +1257,7 @@ void ParadoxPlugin::chat_event(es::PlayerChatEvent &e) {
         e.setCancelled(true);
         for (auto *recipient : getServer().getOnlinePlayers())
             if (players_[id(*recipient)].channel == s.channel)
-                recipient->sendMessage("[" + s.channel + "] " + p.getName() + ": " + e.getMessage());
+                recipient->sendMessage(tr("chat_format", {{"channel", s.channel}, {"player", p.getName()}, {"message", e.getMessage()}}));
     }
 }
 void ParadoxPlugin::command_event(es::PlayerCommandEvent &e) {
@@ -1239,7 +1276,7 @@ void ParadoxPlugin::break_event(es::BlockBreakEvent &e) {
     auto &p = e.getPlayer();
     if (protected_block(p, e.getBlock())) {
         e.setCancelled(true);
-        p.sendMessage("[Paradox] This area/container is protected.");
+        p.sendMessage(tr("area_protected"));
         return;
     }
     auto type = e.getBlock().getType();
@@ -1286,7 +1323,7 @@ void ParadoxPlugin::interact_event(es::PlayerInteractEvent &e) {
         return;
     if (protected_block(p, *block)) {
         e.setCancelled(true);
-        p.sendMessage("[Paradox] This container is locked.");
+        p.sendMessage(tr("container_locked"));
         return;
     }
     if (enabled("containerlock") && container(block->getType()) && p.isSneaking() && e.getItem() &&
@@ -1295,10 +1332,10 @@ void ParadoxPlugin::interact_event(es::PlayerInteractEvent &e) {
         auto old = container_lock(*block);
         if (old.is_object()) {
             erase_container_lock(*block);
-            p.sendMessage("[Paradox] Container unlocked.");
+            p.sendMessage(tr("container_unlocked"));
         } else {
             db_->set("container_locks", key, {{"owner", id(p)}, {"name", p.getName()}});
-            p.sendMessage("[Paradox] Container locked.");
+            p.sendMessage(tr("container_locked_msg"));
         }
         e.setCancelled(true);
     }
@@ -1313,8 +1350,12 @@ void ParadoxPlugin::death_event(es::PlayerDeathEvent &e) {
     auto l = p.getLocation();
     db_->set("death_coordinates", id(p), location_json(l));
     if (enabled("deathcoords"))
-        p.sendMessage(std::format("[Paradox] Death: {:.2f}, {:.2f}, {:.2f} ({})", l.getX(), l.getY(), l.getZ(),
-                                  l.getDimension().getName()));
+        p.sendMessage(tr("death_coords", {
+            {"x", std::format("{:.2f}", l.getX())},
+            {"y", std::format("{:.2f}", l.getY())},
+            {"z", std::format("{:.2f}", l.getZ())},
+            {"dim", l.getDimension().getName()}
+        }));
     if (enabled("gravesaver"))
         preserve_grave(p);
     reset(p, 10);
@@ -1459,8 +1500,8 @@ void ParadoxPlugin::send_form(es::Player &p, es::ActionForm form) {
 }
 void ParadoxPlugin::show_gui(es::Player &p) {
     es::ActionForm form;
-    form.setTitle("Paradox").setContent("Protection, evidence and server controls");
-    form.addButton("Module settings", std::nullopt, [this](es::Player *player) {
+    form.setTitle(tr("form_title")).setContent(tr("form_content"));
+    form.addButton(tr("form_btn_module"), std::nullopt, [this](es::Player *player) {
         if (!active_ || !player || (clearance(*player) < 4 && !player->hasPermission("paradox.settings")))
             return;
         es::ActionForm list;
@@ -1470,23 +1511,23 @@ void ParadoxPlugin::show_gui(es::Player &p) {
                            [this, name](es::Player *p) {
                                if (active_ && p && (clearance(*p) >= 4 || p->hasPermission("paradox.settings"))) {
                                    module(name, !enabled(name));
-                                   p->sendMessage("[Paradox] " + name + " updated.");
+                                   p->sendMessage(tr("module_updated", {{"name", name}}));
                                }
                            });
         send_form(*player, std::move(list));
     });
-    form.addButton("Recent evidence", std::nullopt, [this](es::Player *player) {
+    form.addButton(tr("form_btn_evidence"), std::nullopt, [this](es::Player *player) {
         if (active_ && player && (clearance(*player) >= 3 || player->hasPermission("paradox.case"))) {
             es::ActionForm f;
             f.setTitle("Evidence").setContent(recent_.dump(2));
             send_form(*player, std::move(f));
         }
     });
-    form.addButton("My homes", std::nullopt, [this](es::Player *player) {
+    form.addButton(tr("form_btn_homes"), std::nullopt, [this](es::Player *player) {
         if (active_ && player)
             command(*player, "ac-home", {"list"});
     });
-    form.addButton("Connection health", std::nullopt, [this](es::Player *player) {
+    form.addButton(tr("form_btn_health"), std::nullopt, [this](es::Player *player) {
         if (active_ && player)
             command(*player, "ac-ping", {});
     });
@@ -1657,9 +1698,9 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
                       {"time", unix_time()},
                       {"expires", action == "tempban" ? unix_time() + 3600 : 0}});
             db_->flush();
-            p.kick("[Paradox] " + reason);
+            p.kick(tr("generic_kick_punish", {{"reason", reason}}));
         } else if (action == "kick")
-            p.kick("[Paradox] " + reason);
+            p.kick(tr("generic_kick_punish", {{"reason", reason}}));
         else if (action == "freeze") {
             auto &s = players_[id(p)];
             s.frozen = !s.frozen;
@@ -1668,9 +1709,9 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         } else if (action == "mute")
             db_->set("mutes", id(p), unix_time() + 600);
         else if (action == "warn")
-            p.sendMessage("[Paradox] " + reason);
+            p.sendMessage(tr("generic_kick_punish", {{"reason", reason}}));
         else
-            throw std::invalid_argument("Use warn, mute, kick, ban, tempban or freeze.");
+            throw std::invalid_argument(tr("punish_usage"));
         audit(action, sender, {{"target", id(p)}, {"reason", reason}});
         say("Moderation action completed.");
         return true;
@@ -1942,7 +1983,7 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         else {
             auto &to = target(0);
             tpa_[id(to)] = {id(p), now() + 60};
-            to.sendMessage("[Paradox] " + p.getName() + " requests teleport. Use /ac-tpa accept or deny.");
+            to.sendMessage(tr("tpa_request", {{"player", p.getName()}}));
         }
         return true;
     }
@@ -2147,8 +2188,8 @@ bool ParadoxPlugin::command(es::CommandSender &sender, std::string name, const s
         if (a.size() > 1 && a[1] == "kick")
             for (auto *p : getServer().getOnlinePlayers())
                 if (clearance(*p) < 4)
-                    p->kick("[Paradox] Server lockdown");
-        say(state ? "Lockdown enabled; existing players retained unless kick was requested." : "Lockdown disabled.");
+                    p->kick(tr("lockdown_kick"));
+        say(state ? tr("lockdown_enabled") : tr("lockdown_disabled"));
         return true;
     }
     if (modules_.contains(name)) {

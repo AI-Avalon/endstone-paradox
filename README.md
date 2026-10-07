@@ -1,4 +1,6 @@
 # Paradox Native 2.0.1
+*Read this in other languages: [日本語 (Japanese)](README.ja.md).*
+
 
 C++23 anti-cheat monitoring, moderation and administration for **Endstone 0.11.11 / BDS 1.26.51.1 (protocol 2193)**, on Windows and Linux x86-64. Based on [Visual1mpact's Paradox](https://github.com/Visual1mpact/Paradox_AntiCheat), reviewed through v6.9.1.
 
