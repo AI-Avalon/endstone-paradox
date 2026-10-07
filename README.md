@@ -1,7 +1,4 @@
 # Paradox Native 2.0.1
-*Read this in other languages: [日本語 (Japanese)](README.ja.md).*
-
-
 C++23 anti-cheat monitoring, moderation and administration for **Endstone 0.11.11 / BDS 1.26.51.1 (protocol 2193)**, on Windows and Linux x86-64. Based on [Visual1mpact's Paradox](https://github.com/Visual1mpact/Paradox_AntiCheat), reviewed through v6.9.1.
 
 The plugin runs as a native `.dll` or `.so`. Endstone itself still uses its normal runtime and bootstrap. The Python implementation is archived under [`legacy/python`](legacy/python); do not load both implementations.
@@ -75,3 +72,5 @@ Endstone's native plugin API supplies the server hooks and ABI boundary. This po
 The documentation site and wiki export share the sources in `docs/`. Module pages are generated from the audited native registry. Run `python native/tools/sync-docs.py --check` to check consistency; see [documentation maintenance](docs/maintenance.md) for editing and wiki publication.
 
 GPL-3.0-or-later. Original Paradox by Visual1mpact; Endstone port by TheNINJALLO. Third-party notices are in [`native/licenses`](native/licenses).
+
+* [日本語 (Japanese)](README.ja.md)

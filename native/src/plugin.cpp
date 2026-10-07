@@ -208,7 +208,7 @@ class ParadoxPlugin : public es::Plugin {
                     }
                     if (now() - last_event_error_ > 10) {
                         last_event_error_ = now();
-                        getLogger().error(tr("log_event_inspection_suspended"), e.what();
+                        getLogger().error("{}", tr("log_event_inspection_suspended", {{"error", e.what()}}));
                     }
                 }
             },
@@ -322,7 +322,7 @@ void ParadoxPlugin::onEnable() {
                             locale_[el.key()] = el.value();
                         }
                     } catch (const std::exception &e) {
-                        getLogger().error(tr("log_failed_to_parse_locale"), l, e.what();
+                        getLogger().error("{}", tr("log_failed_to_parse_locale", {{"locale", l}, {"error", e.what()}}));
                     }
                 }
             }
@@ -433,7 +433,7 @@ void ParadoxPlugin::onEnable() {
                          "plugin data folder.",
                          PARADOX_VERSION, modules_.size());
     } catch (const std::exception &e) {
-        getLogger().error(tr("log_paradox_startup_failed"), e.what();
+        getLogger().error("{}", tr("log_paradox_startup_failed", {{"error", e.what()}}));
         getServer().getPluginManager().disablePlugin(*this);
     }
 }
@@ -448,7 +448,7 @@ void ParadoxPlugin::onDisable() {
         try {
             db_->flush();
         } catch (const std::exception &e) {
-            getLogger().error(tr("log_database_flush_failed"), e.what();
+            getLogger().error("{}", tr("log_database_flush_failed", {{"error", e.what()}}));
         }
         db_.reset();
     }
@@ -755,7 +755,7 @@ void ParadoxPlugin::tick() {
             try {
                 command(getServer().getCommandSender(), name, split({rest}));
             } catch (const std::exception &e) {
-                getLogger().warning(tr("log_web_command_failed"), e.what();
+                getLogger().warning("{}", tr("log_web_command_failed", {{"error", e.what()}}));
             }
         }
         for (auto &[tag, response] : web_->responses()) {
@@ -795,7 +795,7 @@ void ParadoxPlugin::tick() {
         std::erase_if(watchers_, [&](auto &i) { return i.second.second < time; });
         std::erase_if(tpa_, [&](auto &i) { return i.second.second < time; });
         if (!db_->error().empty())
-            getLogger().error(tr("log_paradox_persistence_is_unavail"), db_->error();
+            getLogger().error("{}", tr("log_paradox_persistence_is_unavail", {{"error", db_->error()}}));
     }
     if (ticks_ % 20 == 0 && enabled("lagclear") && setting<bool>("lagclear", "enabled_removal", true)) {
         double interval =
