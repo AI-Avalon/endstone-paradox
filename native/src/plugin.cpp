@@ -110,7 +110,7 @@ std::vector<std::string> split(const std::vector<std::string> &args) {
     while (in >> std::quoted(s)) {
         out.push_back(s);
         if (out.size() > 32)
-            throw std::invalid_argument(tr("cmd_too_many_arguments"));
+            throw std::invalid_argument("Too many arguments");
     }
     return out;
 }
@@ -127,7 +127,7 @@ double number(const std::string &s, double low, double high) {
     std::size_t n{};
     double d = std::stod(s, &n);
     if (n != s.size() || !std::isfinite(d) || d < low || d > high)
-        throw std::invalid_argument(tr("cmd_value_outside_allowed_range"));
+        throw std::invalid_argument("Value outside allowed range");
     return d;
 }
 
