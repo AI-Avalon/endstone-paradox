@@ -246,5 +246,22 @@
     "desc_ac-tower": "Configure tower",
     "usage_ac-tower": "/ac-tower [args: message]",
     "desc_ac-jesus": "Configure jesus",
-    "usage_ac-jesus": "/ac-jesus [args: message]"
+    "usage_ac-jesus": "/ac-jesus [args: message]",
+    "Inspection size budget exceeded": "Inspection size budget exceeded",
+    "Malformed protocol 2193 input": "Malformed protocol 2193 input",
+    "Non-finite movement fields": "Non-finite movement fields",
+    "Malformed protocol 2193 hotbar selection": "Malformed protocol 2193 hotbar selection",
+    "Selected hotbar slot outside 0..8": "Selected hotbar slot outside 0..8",
+    "Malformed protocol 2193 subchunk request": "Malformed protocol 2193 subchunk request",
+    "Packet inspection budget or schema failure": "Packet inspection budget or schema failure",
+    "Duplicate display name; authenticated identities retained": "Duplicate display name; authenticated identities retained",
+    "Small response to server knockback; collision/resistance may explain this": "Small response to server knockback; collision/resistance may explain this",
+    "Skin image dimensions do not match decoded pixel data": "Skin image dimensions do not match decoded pixel data",
+    "Rapid totem inventory change; pickup or an inventory tool may explain it": "Rapid totem inventory change; pickup or an inventory tool may explain it",
+    "Airborne attack with little vertical motion; apex/effects may explain this": "Airborne attack with little vertical motion; apex/effects may explain this",
+    "Configured honeypot interacted with; review required": "Configured honeypot interacted with; review required",
+    "Negative item amount": "Negative item amount",
+    "High network traffic review": "High network traffic review",
+    "Traffic burst review; BDS transport limits remain authoritative": "Traffic burst review; BDS transport limits remain authoritative",
+    "Invalid hotbar slot": "Invalid hotbar slot"
 }

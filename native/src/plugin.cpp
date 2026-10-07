@@ -544,7 +544,7 @@ void ParadoxPlugin::initialize(es::Player &p) {
             if (id(*other) != uid && normalize_name(other->getName()) == normalize_name(p.getName())) {
                 db_->set("spoof_log", uid,
                          {{"name", p.getName()}, {"reason", "Duplicate online display name"}, {"time", unix_time()}});
-                emit(p, {"namespoof", "Duplicate display name; authenticated identities retained",
+                emit(p, {"namespoof", tr("Duplicate display name; authenticated identities retained"),
                          Confidence::observation});
             }
 }
@@ -705,7 +705,7 @@ void ParadoxPlugin::tick() {
         if (s.knockback_origin && time - s.knockback_time >= 0.3) {
             if (time - s.knockback_time < 1 && vec(p->getLocation()).distance(*s.knockback_origin) < 0.05 &&
                 p->getPing().count() > 0 && p->getPing().count() < 150 && getServer().getCurrentTicksPerSecond() >= 19)
-                emit(*p, {"antikb", "Small response to server knockback; collision/resistance may explain this",
+                emit(*p, {"antikb", tr("Small response to server knockback; collision/resistance may explain this"),
                           Confidence::observation});
             s.knockback_origin.reset();
         }
@@ -846,7 +846,7 @@ void ParadoxPlugin::inspect_skin(es::Player &p) {
     const auto w = image.getWidth(), h = image.getHeight(), depth = image.getDepth();
     if (w <= 0 || h <= 0 || depth < 1 || depth > 4 ||
         static_cast<std::uint64_t>(w) * h * depth != image.getData().size())
-        emit(p, {"skinguard", "Skin image dimensions do not match decoded pixel data", Confidence::observation});
+        emit(p, {"skinguard", tr("Skin image dimensions do not match decoded pixel data"), Confidence::observation});
 }
 Json ParadoxPlugin::inventory(es::Player &p) const {
     Json result = Json::array();
@@ -897,7 +897,7 @@ void ParadoxPlugin::inspect_inventory(es::Player &p) {
                 return count;
             };
             if (totems(contents) > totems(s.inventory))
-                emit(p, {"autototem", "Rapid totem inventory change; pickup or an inventory tool may explain it",
+                emit(p, {"autototem", tr("Rapid totem inventory change; pickup or an inventory tool may explain it"),
                          Confidence::observation});
         }
     }
@@ -1211,7 +1211,7 @@ void ParadoxPlugin::damage_event(es::ActorDamageEvent &e) {
         emit(*attacker, f, &e);
     if (enabled("criticals") && !attacker->isOnGround() && std::abs(attacker->getVelocity().getY()) < 0.001 &&
         s.detector.lag.ready(now()))
-        emit(*attacker, {"criticals", "Airborne attack with little vertical motion; apex/effects may explain this",
+        emit(*attacker, {"criticals", tr("Airborne attack with little vertical motion; apex/effects may explain this"),
                          Confidence::observation});
     s.attack_time = now();
     s.last_target = std::to_string(e.getActor().getRuntimeId());
@@ -1284,7 +1284,7 @@ void ParadoxPlugin::break_event(es::BlockBreakEvent &e) {
          players_[id(p)].detector.block(now(), false, type.find("ore") != std::string::npos, false, health(p)))
         emit(p, f, &e);
     if (enabled("botdetection") && db_->get("honeypots", block_key(e.getBlock())).is_object())
-        emit(p, {"botdetection", "Configured honeypot interacted with; review required", Confidence::observation});
+        emit(p, {"botdetection", tr("Configured honeypot interacted with; review required"), Confidence::observation});
     if (!e.isCancelled())
         erase_container_lock(e.getBlock());
 }
@@ -1343,7 +1343,7 @@ void ParadoxPlugin::interact_event(es::PlayerInteractEvent &e) {
 void ParadoxPlugin::held_event(es::PlayerItemHeldEvent &e) {
     if (e.getNewSlot() < 0 || e.getNewSlot() > 8)
         emit(e.getPlayer(),
-             {"hotbarcheck", "Invalid hotbar slot", Confidence::invalid, static_cast<double>(e.getNewSlot()), 8}, &e);
+             {"hotbarcheck", tr("Invalid hotbar slot"), Confidence::invalid, static_cast<double>(e.getNewSlot()), 8}, &e);
 }
 void ParadoxPlugin::death_event(es::PlayerDeathEvent &e) {
     auto &p = e.getPlayer();
@@ -1388,7 +1388,7 @@ void ParadoxPlugin::preserve_grave(es::Player &p) {
 }
 void ParadoxPlugin::drop_event(es::PlayerDropItemEvent &e) {
     if (e.getItem().getAmount() < 0)
-        emit(e.getPlayer(), {"crashdrop", "Negative item amount", Confidence::invalid}, &e);
+        emit(e.getPlayer(), {"crashdrop", tr("Negative item amount"), Confidence::invalid}, &e);
     players_[id(e.getPlayer())].inventory_time = now();
     players_[id(e.getPlayer())].inventory_dirty = true;
 }
@@ -1426,7 +1426,7 @@ void ParadoxPlugin::receive(es::PacketReceiveEvent &e) {
         return;
     }
     if (packet.malformed)
-        emit(*p, {e.getPacketId() == 48 ? "hotbarcheck" : "anticrash", packet.reason, Confidence::invalid}, &e);
+        emit(*p, {e.getPacketId() == 48 ? "hotbarcheck" : "anticrash", tr(packet.reason), Confidence::invalid}, &e);
     if (packet.malformed) {
         s.detector.reset(time);
         enforcement_.reset(id(*p));
@@ -1444,9 +1444,9 @@ void ParadoxPlugin::receive(es::PacketReceiveEvent &e) {
     ++s.packets;
     if (time - s.last_packet_window >= 5) {
         if (s.packets > 5000 && s.detector.lag.ready(time)) {
-            emit(*p, {"packetmonitor", "High network traffic review", Confidence::observation,
+            emit(*p, {"packetmonitor", tr("High network traffic review"), Confidence::observation,
                       static_cast<double>(s.packets), 5000});
-            emit(*p, {"ratelimit", "Traffic burst review; BDS transport limits remain authoritative",
+            emit(*p, {"ratelimit", tr("Traffic burst review; BDS transport limits remain authoritative"),
                       Confidence::observation, static_cast<double>(s.packets), 5000});
         }
         s.packets = 0;

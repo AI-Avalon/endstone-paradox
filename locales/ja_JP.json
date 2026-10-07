@@ -246,5 +246,22 @@
     "desc_ac-tower": "tower モジュールを設定します。",
     "usage_ac-tower": "/ac-tower [引数...]",
     "desc_ac-jesus": "jesus モジュールを設定します。",
-    "usage_ac-jesus": "/ac-jesus [引数...]"
+    "usage_ac-jesus": "/ac-jesus [引数...]",
+    "Duplicate display name; authenticated identities retained": "重複する表示名; 認証済みIDは保持されます",
+    "Small response to server knockback; collision/resistance may explain this": "サーバーのノックバックに対する反応が小さすぎます; 衝突や耐性が原因の可能性もあります",
+    "Skin image dimensions do not match decoded pixel data": "スキンの画像寸法がデコードされたピクセルデータと一致しません",
+    "Rapid totem inventory change; pickup or an inventory tool may explain it": "不死のトーテムの急速な移動; アイテムの拾得またはインベントリツールの可能性があります",
+    "Airborne attack with little vertical motion; apex/effects may explain this": "垂直方向の動きがほとんどない空中攻撃; 頂点またはエフェクトの可能性があります",
+    "Configured honeypot interacted with; review required": "設定されたハニーポットとの相互作用が検知されました; 確認が必要です",
+    "Negative item amount": "アイテムの数量がマイナスです",
+    "High network traffic review": "高いネットワークトラフィックの確認",
+    "Traffic burst review; BDS transport limits remain authoritative": "トラフィックバーストの確認; BDS転送制限が引き続き適用されます",
+    "Inspection size budget exceeded": "パケット検査のサイズ制限を超過しました",
+    "Malformed protocol 2193 input": "不正なプロトコル2193入力",
+    "Non-finite movement fields": "非有限の移動フィールド",
+    "Malformed protocol 2193 hotbar selection": "不正なプロトコル2193ホットバー選択",
+    "Selected hotbar slot outside 0..8": "選択されたホットバースロットが0～8の範囲外です",
+    "Malformed protocol 2193 subchunk request": "不正なプロトコル2193サブチャンクリクエスト",
+    "Packet inspection budget or schema failure": "パケット検査制限の超過またはスキーマエラー",
+    "Invalid hotbar slot": "無効なホットバースロット"
 }
